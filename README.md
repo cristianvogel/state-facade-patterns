@@ -373,16 +373,6 @@ AppState.count++;
 
 ### From Context API
 
-**Before:**
-```typescript
-// Provide
-setContext('state', { count: $state(0) });
-
-// Consume
-const state = getContext<{ count: number }>('state');
-```
-
-**After:**
 ```typescript
 // Define once
 export const AppState = reactiveState({ count: 0 });
@@ -427,12 +417,23 @@ describe('AppState', () => {
 });
 ```
 
+## Debugging Tips
 
-### Inspect Current State
-```svelte
-$inspect(AppState)
+### Log State Changes
+```typescript
+AppState.subscribe((state) => {
+    console.log('[AppState]', state);
+});
 ```
 
+### Inspect Current State
+```typescript
+// In browser console or debug statements
+console.log(AppState.current);
+```
+
+### Track Specific Property Changes
+use the awesome `$inspect()` Rune ( see [docs](https://svelte.dev/docs/svelte/$inspect) )
 
 ## When NOT to Use
 
