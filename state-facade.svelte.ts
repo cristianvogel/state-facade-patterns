@@ -1,3 +1,5 @@
+import type {Snapshot} from "@sveltejs/kit";
+
 /**
  * Creates a reactive state object with Svelte 5 runes that acts like a plain object
  * while maintaining reactivity through getters/setters and providing utility methods.
@@ -20,82 +22,71 @@
  * const snapshot = AppState.current;
  * ```
  */
-export function reactiveState<T extends Record<string, any>>(initial: T) {
+export function reactiveState<T extends Record<string, any>>(initial: T): ReactiveState<T> {
+    // Capture a deep clone of the initial state for resets
+    const startValue = structuredClone(initial);
     let state = $state(initial);
 
     const api = {
         /**
-         * Get a snapshot of the entire state object
+         * Get a reactive state object
          */
         get current(): T {
-            return state;
+            return state ;
+        },
+
+        get snapshot(): Snapshot<T> {
+            return $state.snapshot(state)  as Snapshot<T>;
         },
 
         /**
          * Update multiple properties at once
          */
         update(partial: Partial<T>): void {
-            state = { ...state, ...partial };
+            Object.assign(state, partial);
         },
 
         /**
          * Reset state to initial values
          */
         reset(): void {
-            state = { ...initial };
-        },
-
-        /**
-         * Subscribe to state changes (if needed for effects)
-         * Returns the current state for immediate use
-         */
-        subscribe(callback: (state: T) => void): T {
-            $effect(() => {
-                callback(state);
-            });
-            return state;
+            Object.assign(state, structuredClone(startValue));
         }
     };
 
-    return new Proxy(api, {
-        get(target, prop) {
-            // Return API methods first
-            if (prop in target) {
-                return target[prop as keyof typeof target];
-            }
-            // Then proxy to state properties
-            return state[prop as keyof T];
-        },
+    // forwards unknown keys to the reactive store
+    const apiKeys = new Set(Object.keys(api));
 
-        set(target, prop, value) {
-            // Prevent overriding API methods
-            if (prop in target) {
+    return new Proxy(api, {
+        get(t, p) {
+            return apiKeys.has(String(p)) ? (t as any)[p] : (state as any)[p];
+        },
+        set(t, p, v) {
+            if (apiKeys.has(String(p))) {
+                console.warn(`Cannot overwrite protected method "${String(p)}".`);
                 return false;
             }
-            // Update state property
-            state = { ...state, [prop]: value };
+            (state as any)[p] = v;
             return true;
         },
-
-        has(target, prop) {
-            return prop in target || prop in state;
+        has(t, p) {
+            return apiKeys.has(String(p)) || p in state;
         },
-
-        ownKeys(target) {
-            return [...Object.keys(target), ...Object.keys(state)];
+        ownKeys(t) {
+            return [...Reflect.ownKeys(t), ...Reflect.ownKeys(state)];
         },
-
-        getOwnPropertyDescriptor(target, prop) {
-            if (prop in target) {
-                return Object.getOwnPropertyDescriptor(target, prop);
+        getOwnPropertyDescriptor(t, p) {
+            if (apiKeys.has(String(p))) {
+                return Reflect.getOwnPropertyDescriptor(t, p);
             }
             return {
                 enumerable: true,
                 configurable: true,
-                value: state[prop as keyof T]
+                writable: true,
+                value: (state as any)[p]
             };
         }
-    }) as T & typeof api;
+    }) as ReactiveState<T>;
 }
 
 /**
@@ -103,7 +94,7 @@ export function reactiveState<T extends Record<string, any>>(initial: T) {
  */
 export type ReactiveState<T> = T & {
     readonly current: T;
+    readonly snapshot: Snapshot<T>;
     update(partial: Partial<T>): void;
     reset(): void;
-    subscribe(callback: (state: T) => void): T;
 };
