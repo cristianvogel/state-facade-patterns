@@ -1,7 +1,7 @@
 
 # Service Class
 
-Even safer solution, with read/write access and generated accessors! This example is for managing the front-end state of a Tauri app.
+Even safer solution, with read/write access and generated accessors! My example is for managing the front-end state of a Tauri app.
 
 ## Usage Example
 
@@ -22,7 +22,6 @@ const stateSnapshot = MyService.snapshot;
 
 - **Dynamic Accessors**: Automatically generated getters and setters for state properties.
 - **Type Safety**: Ensures correct types for read/write operations.
-- **Easy State Management**: Streamlined access to Tauri IPC state.
 
 
 ## License
