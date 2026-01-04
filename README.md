@@ -24,10 +24,6 @@ const stateSnapshot = MyService.snapshot;
 - **Type Safety**: Ensures correct types for read/write operations.
 - **Easy State Management**: Streamlined access to Tauri IPC state.
 
-## Dependencies
-
-- `@lib/statics/defaults.svelte` (defaults not defined in this example)
-- `@routes/workspace/types` (TauriIPC type not defined in this example)
 
 ## License
 
